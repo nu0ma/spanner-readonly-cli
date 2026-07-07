@@ -38,18 +38,6 @@ Flags `--project` / `--instance` / `--database` override the environment
 variables. `SPANNER_EMULATOR_HOST` is honored for local development.
 Authentication uses Application Default Credentials.
 
-### Spanner Omni
-
-`--endpoint` (or `SPANNER_ENDPOINT`) targets a [Spanner Omni](https://cloud.google.com/products/spanner/omni)
-deployment instead of Google Cloud. The connection is unauthenticated
-plaintext gRPC (the current Omni preview does not support TLS). Project and
-instance are both `default` on Omni:
-
-```sh
-spanner-ro tables --endpoint localhost:15000 \
-  --project default --instance default --database my-db
-```
-
 ### Output
 
 A single JSON object on stdout — designed to be easy for agents and `jq`:
