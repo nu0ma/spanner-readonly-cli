@@ -1,6 +1,9 @@
-package cli
+package main
 
-import "fmt"
+import (
+	"cmp"
+	"fmt"
+)
 
 type Config struct {
 	Project  string
@@ -19,10 +22,10 @@ func (c Config) DatabasePath() string {
 // environment variables used by spanner-readonly-mcp.
 func resolveConfig(project, instance, database, endpoint string, getenv func(string) string) (Config, error) {
 	cfg := Config{
-		Project:  firstNonEmpty(project, getenv("SPANNER_PROJECT")),
-		Instance: firstNonEmpty(instance, getenv("SPANNER_INSTANCE")),
-		Database: firstNonEmpty(database, getenv("SPANNER_DATABASE")),
-		Endpoint: firstNonEmpty(endpoint, getenv("SPANNER_ENDPOINT")),
+		Project:  cmp.Or(project, getenv("SPANNER_PROJECT")),
+		Instance: cmp.Or(instance, getenv("SPANNER_INSTANCE")),
+		Database: cmp.Or(database, getenv("SPANNER_DATABASE")),
+		Endpoint: cmp.Or(endpoint, getenv("SPANNER_ENDPOINT")),
 	}
 	var missing []string
 	if cfg.Project == "" {
@@ -38,13 +41,4 @@ func resolveConfig(project, instance, database, endpoint string, getenv func(str
 		return Config{}, fmt.Errorf("missing required configuration: %v", missing)
 	}
 	return cfg, nil
-}
-
-func firstNonEmpty(values ...string) string {
-	for _, v := range values {
-		if v != "" {
-			return v
-		}
-	}
-	return ""
 }

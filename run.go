@@ -1,4 +1,4 @@
-package cli
+package main
 
 import (
 	"context"
@@ -87,9 +87,26 @@ func Run(args []string, stdout, stderr io.Writer, getenv func(string) string) in
 		return 2
 	}
 
-	stmt, err := buildStatement(command, positional, paramFlags, tableFilter)
-	if err != nil {
-		return writeError(stderr, err)
+	var stmt spanner.Statement
+	switch command {
+	case "query":
+		if len(positional) != 1 {
+			return writeError(stderr, fmt.Errorf("query requires exactly one SQL argument"))
+		}
+		params, err := parseParams(paramFlags)
+		if err != nil {
+			return writeError(stderr, err)
+		}
+		stmt = spanner.Statement{SQL: positional[0], Params: params}
+	case "tables":
+		stmt = tablesStatement()
+	case "describe":
+		if len(positional) != 1 {
+			return writeError(stderr, fmt.Errorf("describe requires exactly one table argument"))
+		}
+		stmt = describeStatement(positional[0])
+	case "indexes":
+		stmt = indexesStatement(tableFilter)
 	}
 
 	cfg, err := resolveConfig(*project, *instance, *database, *endpoint, getenv)
@@ -128,30 +145,6 @@ func parseInterleaved(fs *flag.FlagSet, args []string) ([]string, error) {
 		positional = append(positional, args[0])
 		args = args[1:]
 	}
-}
-
-func buildStatement(command string, positional []string, paramFlags stringSlice, tableFilter string) (spanner.Statement, error) {
-	switch command {
-	case "query":
-		if len(positional) != 1 {
-			return spanner.Statement{}, fmt.Errorf("query requires exactly one SQL argument")
-		}
-		params, err := parseParams(paramFlags)
-		if err != nil {
-			return spanner.Statement{}, err
-		}
-		return spanner.Statement{SQL: positional[0], Params: params}, nil
-	case "tables":
-		return tablesStatement(), nil
-	case "describe":
-		if len(positional) != 1 {
-			return spanner.Statement{}, fmt.Errorf("describe requires exactly one table argument")
-		}
-		return describeStatement(positional[0]), nil
-	case "indexes":
-		return indexesStatement(tableFilter), nil
-	}
-	return spanner.Statement{}, fmt.Errorf("unknown command %q", command)
 }
 
 // executeReadOnly runs stmt inside a single-use read-only snapshot
@@ -212,11 +205,8 @@ func omniClientOptions(endpoint string) []option.ClientOption {
 }
 
 func writeError(stderr io.Writer, err error) int {
-	msg, marshalErr := marshalJSON(map[string]string{"error": err.Error()})
-	if marshalErr != nil {
-		fmt.Fprintf(stderr, `{"error":%q}`+"\n", err.Error())
-		return 1
-	}
+	// Marshaling a map[string]string cannot fail.
+	msg, _ := marshalJSON(map[string]string{"error": err.Error()})
 	fmt.Fprintln(stderr, string(msg))
 	return 1
 }
