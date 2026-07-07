@@ -1,5 +1,5 @@
 [tagpr]
 vPrefix = true
 releaseBranch = main
-versionFile = internal/cli/version.go
+versionFile = version.go
 changelog = true
