@@ -38,6 +38,16 @@ Flags `--project` / `--instance` / `--database` override the environment
 variables. `SPANNER_EMULATOR_HOST` is honored for local development.
 Authentication uses Application Default Credentials.
 
+Tip: with [direnv](https://direnv.net/), drop an `.envrc` in your project
+so the variables are set automatically per directory:
+
+```sh
+# .envrc
+export SPANNER_PROJECT=my-project
+export SPANNER_INSTANCE=my-instance
+export SPANNER_DATABASE=my-database
+```
+
 ### Output
 
 A single JSON object on stdout — designed to be easy for agents and `jq`:
