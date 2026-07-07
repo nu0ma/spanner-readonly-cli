@@ -5,6 +5,25 @@ on:
   pull_request:
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - run: go build ./...
+
+  actionlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Run actionlint
+        # 1.7.12, pinned by digest
+        run: |
+          docker run --rm -v "$PWD:/repo" --workdir /repo \
+            rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color
+
   test:
     runs-on: ubuntu-latest
     env:
@@ -19,7 +38,7 @@ jobs:
         run: |
           docker run -d --name spanner-omni -p 15000-15026:15000-15026 \
             "$OMNI_IMAGE" start-single-server
-          for i in $(seq 1 60); do
+          for _ in $(seq 1 60); do
             if docker logs spanner-omni 2>&1 | grep -q "Spanner is ready"; then
               echo "Spanner Omni is ready"
               exit 0
