@@ -95,7 +95,7 @@ and pull request.
 Releases are managed by [tagpr](https://github.com/Songmu/tagpr):
 
 1. Merge changes into `main` — tagpr opens (or updates) a release PR that
-   bumps `internal/cli/version.go` and updates `CHANGELOG.md`
+   bumps `version.go` and updates `CHANGELOG.md`
 2. Merge the release PR — tagpr tags `vX.Y.Z` and creates a GitHub Release
 3. Label the release PR with `minor` / `major` to control the bump
    (default is patch)
