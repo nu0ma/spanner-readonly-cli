@@ -58,6 +58,10 @@ func Run(args []string, stdout, stderr io.Writer, getenv func(string) string) in
 		fmt.Fprint(stdout, usage)
 		return 0
 	}
+	if command == "version" || command == "--version" || command == "-v" {
+		fmt.Fprintln(stdout, "spanner-ro version "+version)
+		return 0
+	}
 
 	fs := flag.NewFlagSet(command, flag.ContinueOnError)
 	fs.SetOutput(stderr)

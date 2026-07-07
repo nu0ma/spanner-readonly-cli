@@ -1,0 +1,35 @@
+name: ci
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      OMNI_IMAGE: us-docker.pkg.dev/spanner-omni/images/spanner-omni:2026.r1-beta.2
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - run: go vet ./...
+      - name: Start Spanner Omni
+        run: |
+          docker run -d --name spanner-omni -p 15000-15026:15000-15026 \
+            "$OMNI_IMAGE" start-single-server
+          for i in $(seq 1 60); do
+            if docker logs spanner-omni 2>&1 | grep -q "Spanner is ready"; then
+              echo "Spanner Omni is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Spanner Omni did not become ready" >&2
+          docker logs spanner-omni >&2
+          exit 1
+      - name: Run tests (unit + E2E)
+        run: go test -v ./...
+        env:
+          SPANNER_ENDPOINT: localhost:15000

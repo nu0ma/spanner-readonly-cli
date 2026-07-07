@@ -85,3 +85,15 @@ func TestRunFlagsAfterPositionalArgs(t *testing.T) {
 		t.Fatalf("--project after positional should be honored: %s", stderr)
 	}
 }
+
+func TestRunVersion(t *testing.T) {
+	for _, arg := range []string{"version", "--version", "-v"} {
+		code, stdout, _ := runCLI(t, []string{arg}, nil)
+		if code != 0 {
+			t.Fatalf("%s: exit code %d", arg, code)
+		}
+		if !strings.Contains(stdout, version) {
+			t.Fatalf("%s: stdout should contain version %q: %s", arg, version, stdout)
+		}
+	}
+}
