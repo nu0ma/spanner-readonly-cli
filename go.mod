@@ -1,4 +1,4 @@
-module spanner-readonly-cli
+module github.com/nu0ma/spanner-readonly-cli
 
 go 1.26.1
 

@@ -17,7 +17,7 @@ $ spanner-ro query "DELETE FROM Users WHERE UserId=1"
 ## Install
 
 ```sh
-go install spanner-readonly-cli@latest   # or: go build -o spanner-ro .
+go install github.com/nu0ma/spanner-readonly-cli@latest   # or: go build -o spanner-ro .
 ```
 
 ## Usage

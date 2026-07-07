@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"spanner-readonly-cli/internal/cli"
+	"github.com/nu0ma/spanner-readonly-cli/internal/cli"
 )
 
 func main() {
