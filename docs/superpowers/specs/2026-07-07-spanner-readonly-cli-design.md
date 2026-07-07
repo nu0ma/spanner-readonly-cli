@@ -35,6 +35,9 @@ MCP 版の4ツールと1対1対応:
 - `--project` / `SPANNER_PROJECT`
 - `--instance` / `SPANNER_INSTANCE`
 - `--database` / `SPANNER_DATABASE`
+- `--endpoint` / `SPANNER_ENDPOINT`: Spanner Omni 等セルフホスト環境向け。
+  設定時は認証なし・平文 gRPC(`IsExperimentalHost`)で接続する。
+  Omni では project / instance は共に `default` 固定
 - `SPANNER_EMULATOR_HOST`(Go クライアントがネイティブ対応)
 - 認証は Application Default Credentials
 
@@ -62,4 +65,6 @@ MCP 版の4ツールと1対1対応:
 - クエリタイムアウト: 30秒デフォルト、`--timeout`(Go duration 形式)で変更可
 - 依存は `cloud.google.com/go/spanner` のみ。CLI パースは標準 `flag`
 - 構成: `main.go`(dispatch) / `internal/cli`(実行・シリアライズ)
-- テスト: シリアライズ・フラグ解決のユニットテスト。エミュレータが使える環境では統合テスト
+- テスト: シリアライズ・フラグ解決のユニットテスト。E2E テストはローカルの
+  Spanner Omni に対して実行(`SPANNER_ENDPOINT` 未設定時はスキップ)。
+  使い捨てデータベースを作成し、4コマンド + DML/DDL 拒否を検証して削除する

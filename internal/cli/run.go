@@ -9,6 +9,9 @@ import (
 
 	"cloud.google.com/go/spanner"
 	"google.golang.org/api/iterator"
+	"google.golang.org/api/option"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 const defaultTimeout = 30 * time.Second
@@ -30,6 +33,9 @@ Connection flags (fall back to environment variables):
   --project    GCP project ID        (SPANNER_PROJECT)
   --instance   Spanner instance ID   (SPANNER_INSTANCE)
   --database   Spanner database ID   (SPANNER_DATABASE)
+  --endpoint   Spanner Omni endpoint (SPANNER_ENDPOINT), e.g. localhost:15000
+               connects without authentication over plaintext gRPC;
+               project and instance are both "default" on Omni
   --timeout    query timeout, e.g. 30s, 2m (default 30s)
 
 SPANNER_EMULATOR_HOST is honored for local development.
@@ -58,6 +64,7 @@ func Run(args []string, stdout, stderr io.Writer, getenv func(string) string) in
 	project := fs.String("project", "", "GCP project ID (SPANNER_PROJECT)")
 	instance := fs.String("instance", "", "Spanner instance ID (SPANNER_INSTANCE)")
 	database := fs.String("database", "", "Spanner database ID (SPANNER_DATABASE)")
+	endpoint := fs.String("endpoint", "", "Spanner Omni endpoint, e.g. localhost:15000 (SPANNER_ENDPOINT)")
 	timeout := fs.Duration("timeout", defaultTimeout, "query timeout")
 	var paramFlags stringSlice
 	var tableFilter string
@@ -81,7 +88,7 @@ func Run(args []string, stdout, stderr io.Writer, getenv func(string) string) in
 		return writeError(stderr, err)
 	}
 
-	cfg, err := resolveConfig(*project, *instance, *database, getenv)
+	cfg, err := resolveConfig(*project, *instance, *database, *endpoint, getenv)
 	if err != nil {
 		return writeError(stderr, err)
 	}
@@ -148,7 +155,7 @@ func buildStatement(command string, positional []string, paramFlags stringSlice,
 // methods, so writes are impossible regardless of the SQL text; DML/DDL is
 // rejected by the server.
 func executeReadOnly(ctx context.Context, cfg Config, stmt spanner.Statement) (Result, error) {
-	client, err := spanner.NewClient(ctx, cfg.DatabasePath())
+	client, err := newSpannerClient(ctx, cfg)
 	if err != nil {
 		return Result{}, fmt.Errorf("failed to create Spanner client: %w", err)
 	}
@@ -177,6 +184,27 @@ func executeReadOnly(ctx context.Context, cfg Config, stmt spanner.Statement) (R
 	}
 	result.RowCount = len(result.Rows)
 	return result, nil
+}
+
+// newSpannerClient connects with Application Default Credentials by default.
+// With cfg.Endpoint set it targets a Spanner Omni (or other self-hosted)
+// deployment instead: unauthenticated plaintext gRPC, as TLS is not
+// supported in the current Omni preview.
+func newSpannerClient(ctx context.Context, cfg Config) (*spanner.Client, error) {
+	if cfg.Endpoint == "" {
+		return spanner.NewClient(ctx, cfg.DatabasePath())
+	}
+	return spanner.NewClientWithConfig(ctx, cfg.DatabasePath(),
+		spanner.ClientConfig{IsExperimentalHost: true},
+		omniClientOptions(cfg.Endpoint)...)
+}
+
+func omniClientOptions(endpoint string) []option.ClientOption {
+	return []option.ClientOption{
+		option.WithEndpoint(endpoint),
+		option.WithoutAuthentication(),
+		option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
+	}
 }
 
 func writeError(stderr io.Writer, err error) int {

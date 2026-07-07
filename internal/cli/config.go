@@ -6,6 +6,9 @@ type Config struct {
 	Project  string
 	Instance string
 	Database string
+	// Endpoint, when set, points at a Spanner Omni or other self-hosted
+	// deployment and switches the client to unauthenticated plaintext gRPC.
+	Endpoint string
 }
 
 func (c Config) DatabasePath() string {
@@ -14,11 +17,12 @@ func (c Config) DatabasePath() string {
 
 // resolveConfig fills each field from the flag value, falling back to the
 // environment variables used by spanner-readonly-mcp.
-func resolveConfig(project, instance, database string, getenv func(string) string) (Config, error) {
+func resolveConfig(project, instance, database, endpoint string, getenv func(string) string) (Config, error) {
 	cfg := Config{
 		Project:  firstNonEmpty(project, getenv("SPANNER_PROJECT")),
 		Instance: firstNonEmpty(instance, getenv("SPANNER_INSTANCE")),
 		Database: firstNonEmpty(database, getenv("SPANNER_DATABASE")),
+		Endpoint: firstNonEmpty(endpoint, getenv("SPANNER_ENDPOINT")),
 	}
 	var missing []string
 	if cfg.Project == "" {

@@ -15,7 +15,7 @@ func TestResolveConfigFlagsWinOverEnv(t *testing.T) {
 		"SPANNER_INSTANCE": "i-env",
 		"SPANNER_DATABASE": "d-env",
 	})
-	cfg, err := resolveConfig("p-flag", "", "d-flag", env)
+	cfg, err := resolveConfig("p-flag", "", "d-flag", "", env)
 	if err != nil {
 		t.Fatalf("resolveConfig error: %v", err)
 	}
@@ -24,12 +24,35 @@ func TestResolveConfigFlagsWinOverEnv(t *testing.T) {
 	}
 }
 
+func TestResolveConfigEndpoint(t *testing.T) {
+	env := envFrom(map[string]string{
+		"SPANNER_PROJECT":  "p",
+		"SPANNER_INSTANCE": "i",
+		"SPANNER_DATABASE": "d",
+		"SPANNER_ENDPOINT": "localhost:15000",
+	})
+	cfg, err := resolveConfig("", "", "", "", env)
+	if err != nil {
+		t.Fatalf("resolveConfig error: %v", err)
+	}
+	if cfg.Endpoint != "localhost:15000" {
+		t.Fatalf("endpoint from env: got %q", cfg.Endpoint)
+	}
+	cfg, err = resolveConfig("", "", "", "other:9999", env)
+	if err != nil {
+		t.Fatalf("resolveConfig error: %v", err)
+	}
+	if cfg.Endpoint != "other:9999" {
+		t.Fatalf("flag should win over env: got %q", cfg.Endpoint)
+	}
+}
+
 func TestResolveConfigMissingValues(t *testing.T) {
-	_, err := resolveConfig("", "i", "d", envFrom(nil))
+	_, err := resolveConfig("", "i", "d", "", envFrom(nil))
 	if err == nil || !strings.Contains(err.Error(), "SPANNER_PROJECT") {
 		t.Fatalf("want error mentioning SPANNER_PROJECT, got %v", err)
 	}
-	_, err = resolveConfig("p", "i", "", envFrom(nil))
+	_, err = resolveConfig("p", "i", "", "", envFrom(nil))
 	if err == nil || !strings.Contains(err.Error(), "SPANNER_DATABASE") {
 		t.Fatalf("want error mentioning SPANNER_DATABASE, got %v", err)
 	}

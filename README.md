@@ -38,6 +38,18 @@ Flags `--project` / `--instance` / `--database` override the environment
 variables. `SPANNER_EMULATOR_HOST` is honored for local development.
 Authentication uses Application Default Credentials.
 
+### Spanner Omni
+
+`--endpoint` (or `SPANNER_ENDPOINT`) targets a [Spanner Omni](https://cloud.google.com/products/spanner/omni)
+deployment instead of Google Cloud. The connection is unauthenticated
+plaintext gRPC (the current Omni preview does not support TLS). Project and
+instance are both `default` on Omni:
+
+```sh
+spanner-ro tables --endpoint localhost:15000 \
+  --project default --instance default --database my-db
+```
+
 ### Output
 
 A single JSON object on stdout — designed to be easy for agents and `jq`:
@@ -72,9 +84,19 @@ Queries time out after 30s by default; override with `--timeout 2m`.
 go test ./...
 ```
 
-End-to-end verification against the Spanner emulator:
+The E2E test (`TestE2E`) runs against a local Spanner Omni server and is
+skipped unless `SPANNER_ENDPOINT` is set. It creates a throwaway database
+on the fixed `default` project/instance and drops it afterwards:
 
 ```sh
-docker run -d -p 9010:9010 gcr.io/cloud-spanner-emulator/emulator
-export SPANNER_EMULATOR_HOST=localhost:9010
+docker run -d --name spanner-omni -p 15000-15026:15000-15026 \
+  -v spanner:/spanner \
+  us-docker.pkg.dev/spanner-omni/images/spanner-omni:2026.r1-beta.2 \
+  start-single-server
+
+SPANNER_ENDPOINT=localhost:15000 go test ./...
 ```
+
+The E2E test covers all four commands plus the read-only guarantee:
+INSERT / UPDATE / DELETE / CREATE TABLE are all rejected by the server and
+the data is verified unchanged.
