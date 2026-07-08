@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.1.3](https://github.com/nu0ma/spanner-readonly-cli/compare/v0.1.2...v0.1.3) - 2026-07-07
+
+- docs: recommend direnv for connection env vars; ignore .envrc by @nu0ma in https://github.com/nu0ma/spanner-readonly-cli/pull/15
+
 ## [v0.1.2](https://github.com/nu0ma/spanner-readonly-cli/compare/v0.1.1...v0.1.2) - 2026-07-07
 
 - docs: remove Spanner Omni section from README by @nu0ma in https://github.com/nu0ma/spanner-readonly-cli/pull/5
