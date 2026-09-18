@@ -1,6 +1,6 @@
 module github.com/nu0ma/spanner-readonly-cli
 
-go 1.26.4
+go 1.27.1
 
 require (
 	cloud.google.com/go/spanner v1.92.0
