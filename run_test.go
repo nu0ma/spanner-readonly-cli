@@ -71,7 +71,7 @@ func TestRunHelp(t *testing.T) {
 }
 
 func TestRunFlagsAfterPositionalArgs(t *testing.T) {
-	// Agents habitually put flags last: spanner-ro query "SELECT 1" --param x=y
+	// Agents habitually put flags last: spanner-readonly-cli query "SELECT 1" --param x=y
 	// The --project flag after the positional arg must still be recognized,
 	// so the error should be about the remaining missing config, not the SQL.
 	code, _, stderr := runCLI(t, []string{"describe", "Users", "--project", "p"}, nil)

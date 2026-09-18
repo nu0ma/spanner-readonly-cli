@@ -3,13 +3,13 @@
 #
 # Prerequisites:
 #   - a Spanner Omni server (docker container name: spanner-omni)
-#   - the spanner-ro binary (path via $SPANNER_RO, default ./spanner-ro)
+#   - the spanner-readonly-cli binary (path via $SPANNER_RO, default ./spanner-readonly-cli)
 #
 # Creates a throwaway sample database, confirms reads work, confirms every
 # write statement is rejected by the server, and confirms the data is intact.
 set -euo pipefail
 
-SPANNER_RO="${SPANNER_RO:-./spanner-ro}"
+SPANNER_RO="${SPANNER_RO:-./spanner-readonly-cli}"
 DB="readonly-verify-$$"
 
 export SPANNER_ENDPOINT="${SPANNER_ENDPOINT:-localhost:15000}"
