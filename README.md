@@ -1,4 +1,4 @@
-# spanner-ro
+# spanner-readonly-cli
 
 Read-only CLI for Cloud Spanner — the CLI counterpart of
 [nu0ma/spanner-readonly-mcp](https://github.com/nu0ma/spanner-readonly-mcp).
@@ -10,14 +10,24 @@ construction — no SQL filtering or regex blocklists involved. DML/DDL
 statements are rejected by the Spanner server itself:
 
 ```
-$ spanner-ro query "DELETE FROM Users WHERE UserId=1"
+$ spanner-readonly-cli query "DELETE FROM Users WHERE UserId=1"
 {"error":"spanner: code = \"InvalidArgument\", desc = \"DML statements may not be performed in single-use transactions, to avoid replay.\", ...}
 ```
 
 ## Install
 
 ```sh
-go install github.com/nu0ma/spanner-readonly-cli@latest   # or: go build -o spanner-ro .
+go install github.com/nu0ma/spanner-readonly-cli@latest
+```
+
+The executable is named `spanner-readonly-cli`. Ensure Go's install directory
+(`GOBIN`, or `$(go env GOPATH)/bin` by default) is on your `PATH`.
+
+Alternatively, build from the repository root and run the local executable:
+
+```sh
+go build -o spanner-readonly-cli .
+./spanner-readonly-cli --help
 ```
 
 ## Usage
@@ -27,12 +37,14 @@ export SPANNER_PROJECT=my-project
 export SPANNER_INSTANCE=my-instance
 export SPANNER_DATABASE=my-database
 
-spanner-ro tables                  # list user tables
-spanner-ro describe Users          # column definitions
-spanner-ro indexes --table Users   # indexes (filter optional)
-spanner-ro query "SELECT * FROM Users LIMIT 10"
-spanner-ro query "SELECT * FROM Users WHERE Email = @email" --param email=a@example.com
+spanner-readonly-cli tables                  # list user tables
+spanner-readonly-cli describe Users          # column definitions
+spanner-readonly-cli indexes --table Users   # indexes (filter optional)
+spanner-readonly-cli query "SELECT * FROM Users LIMIT 10"
+spanner-readonly-cli query "SELECT * FROM Users WHERE Email = @email" --param email=a@example.com
 ```
+
+For a local build, use `./spanner-readonly-cli` in the examples above.
 
 Flags `--project` / `--instance` / `--database` override the environment
 variables. `SPANNER_EMULATOR_HOST` is honored for local development.
@@ -69,7 +81,7 @@ Errors go to stderr as `{"error":"..."}` with a non-zero exit code.
 types, cast in SQL:
 
 ```sh
-spanner-ro query "SELECT * FROM Users WHERE UserId = CAST(@id AS INT64)" --param id=42
+spanner-readonly-cli query "SELECT * FROM Users WHERE UserId = CAST(@id AS INT64)" --param id=42
 ```
 
 ### Timeout

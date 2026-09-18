@@ -16,7 +16,7 @@ import (
 
 const defaultTimeout = 30 * time.Second
 
-const usage = `Usage: spanner-ro <command> [flags]
+const usage = `Usage: spanner-readonly-cli <command> [flags]
 
 Read-only Cloud Spanner CLI. Every query runs inside a read-only snapshot
 transaction, so writes are impossible by construction.
@@ -59,7 +59,7 @@ func Run(args []string, stdout, stderr io.Writer, getenv func(string) string) in
 		return 0
 	}
 	if command == "version" || command == "--version" || command == "-v" {
-		fmt.Fprintln(stdout, "spanner-ro version "+version)
+		fmt.Fprintln(stdout, "spanner-readonly-cli version "+version)
 		return 0
 	}
 
