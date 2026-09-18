@@ -3,7 +3,7 @@ module github.com/nu0ma/spanner-readonly-cli
 go 1.27.1
 
 require (
-	cloud.google.com/go/spanner v1.95.0
+	cloud.google.com/go/spanner v1.95.1
 	google.golang.org/api v0.297.0
 	google.golang.org/grpc v1.83.2
 	google.golang.org/protobuf v1.36.12
