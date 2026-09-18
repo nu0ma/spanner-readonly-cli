@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.1.5](https://github.com/nu0ma/spanner-readonly-cli/compare/v0.1.4...v0.1.5) - 2026-09-18
+
+- chore(deps): update remaining Go dependencies by @nu0ma in https://github.com/nu0ma/spanner-readonly-cli/pull/45
+
 ## [v0.1.4](https://github.com/nu0ma/spanner-readonly-cli/compare/v0.1.3...v0.1.4) - 2026-09-18
 
 - chore(deps): update Go, dependencies and GitHub Actions by @nu0ma in https://github.com/nu0ma/spanner-readonly-cli/pull/42
