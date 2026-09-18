@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.1.4](https://github.com/nu0ma/spanner-readonly-cli/compare/v0.1.3...v0.1.4) - 2026-09-18
+
+- chore(deps): update Go, dependencies and GitHub Actions by @nu0ma in https://github.com/nu0ma/spanner-readonly-cli/pull/42
+- chore(deps): bump cloud.google.com/go/spanner from 1.95.0 to 1.95.1 by @dependabot[bot] in https://github.com/nu0ma/spanner-readonly-cli/pull/36
+- chore(deps): bump zizmorcore/zizmor-action from 0.6.3 to 0.6.4 by @dependabot[bot] in https://github.com/nu0ma/spanner-readonly-cli/pull/37
+- fix: align command name with go install output by @nu0ma in https://github.com/nu0ma/spanner-readonly-cli/pull/43
+
 ## [v0.1.3](https://github.com/nu0ma/spanner-readonly-cli/compare/v0.1.2...v0.1.3) - 2026-07-07
 
 - docs: recommend direnv for connection env vars; ignore .envrc by @nu0ma in https://github.com/nu0ma/spanner-readonly-cli/pull/15
