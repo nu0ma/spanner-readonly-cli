@@ -68,6 +68,12 @@ A single JSON object on stdout — designed to be easy for agents and `jq`:
 {"columns":["UserId","Name"],"rows":[{"UserId":1,"Name":"Alice"}],"rowCount":1,"truncated":false}
 ```
 
+Column names are preserved when a query returns no rows:
+
+```json
+{"columns":["UserId","Name"],"rows":[],"rowCount":0,"truncated":false}
+```
+
 - `INT64` stays a JSON number with full precision (no 2^53 truncation)
 - `BYTES` → base64, `NUMERIC`/`TIMESTAMP`/`DATE` → strings, `JSON` → inline JSON
 - `ARRAY` → array, `STRUCT` → object, `NULL` → null

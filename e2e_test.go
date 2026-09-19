@@ -13,6 +13,7 @@ import (
 	"cloud.google.com/go/spanner"
 	database "cloud.google.com/go/spanner/admin/database/apiv1"
 	"cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
+	"github.com/google/go-cmp/cmp"
 )
 
 // TestE2E drives the CLI end-to-end against a local Spanner Omni server.
@@ -191,6 +192,17 @@ func TestE2E(t *testing.T) {
 		res := mustResult(t, "query", "SELECT COUNT(*) AS c FROM Users")
 		if got := fmt.Sprint(res.Rows[0]["c"]); got != "2" {
 			t.Fatalf("data was modified: count=%s", got)
+		}
+	})
+
+	t.Run("empty query preserves columns", func(t *testing.T) {
+		res := mustResult(t, "query", "SELECT Name AS display_name, UserId AS id FROM Users WHERE UserId = -1")
+		want := Result{
+			Columns: []string{"display_name", "id"},
+			Rows:    []map[string]any{},
+		}
+		if diff := cmp.Diff(want, res); diff != "" {
+			t.Fatalf("empty result mismatch (-want +got):\n%s", diff)
 		}
 	})
 }

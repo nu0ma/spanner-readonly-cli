@@ -205,6 +205,14 @@ func executeReadOnly(ctx context.Context, cfg Config, stmt spanner.Statement, ma
 		}
 		result.Rows = append(result.Rows, m)
 	}
+	// Empty results still include column metadata from the server.
+	if result.Columns == nil {
+		fields := iter.Metadata.GetRowType().GetFields()
+		result.Columns = make([]string, len(fields))
+		for i, field := range fields {
+			result.Columns[i] = field.GetName()
+		}
+	}
 	result.RowCount = len(result.Rows)
 	return result, nil
 }
