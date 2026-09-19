@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.2.2](https://github.com/nu0ma/spanner-readonly-cli/compare/v0.2.1...v0.2.2) - 2026-09-19
+
+- fix: preserve column names for empty query results by @nu0ma in https://github.com/nu0ma/spanner-readonly-cli/pull/51
+
 ## [v0.2.1](https://github.com/nu0ma/spanner-readonly-cli/compare/v0.2.0...v0.2.1) - 2026-09-19
 
 - docs: add MIT license by @nu0ma in https://github.com/nu0ma/spanner-readonly-cli/pull/49
