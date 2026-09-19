@@ -71,23 +71,31 @@ func TestE2E(t *testing.T) {
 	})
 
 	t.Run("describe", func(t *testing.T) {
-		res := mustResult(t, "describe", "Users")
-		if res.RowCount != 3 {
-			t.Fatalf("want 3 columns, got %+v", res)
-		}
-		if res.Rows[0]["column_name"] != "UserId" || res.Rows[0]["spanner_type"] != "INT64" {
-			t.Fatalf("got %+v", res.Rows[0])
+		for _, table := range []string{"Users", "users"} {
+			t.Run(table, func(t *testing.T) {
+				res := mustResult(t, "describe", table)
+				if res.RowCount != 3 {
+					t.Fatalf("want 3 columns, got %+v", res)
+				}
+				if res.Rows[0]["column_name"] != "UserId" || res.Rows[0]["spanner_type"] != "INT64" {
+					t.Fatalf("got %+v", res.Rows[0])
+				}
+			})
 		}
 	})
 
 	t.Run("indexes", func(t *testing.T) {
-		res := mustResult(t, "indexes", "--table", "Users")
-		names := make([]string, 0, len(res.Rows))
-		for _, row := range res.Rows {
-			names = append(names, fmt.Sprint(row["index_name"]))
-		}
-		if !strings.Contains(strings.Join(names, ","), "UsersByEmail") {
-			t.Fatalf("UsersByEmail not found in %v", names)
+		for _, table := range []string{"Users", "users"} {
+			t.Run(table, func(t *testing.T) {
+				res := mustResult(t, "indexes", "--table", table)
+				names := make([]string, 0, len(res.Rows))
+				for _, row := range res.Rows {
+					names = append(names, fmt.Sprint(row["index_name"]))
+				}
+				if diff := cmp.Diff([]string{"PRIMARY_KEY", "UsersByEmail"}, names); diff != "" {
+					t.Fatalf("index names mismatch (-want +got):\n%s", diff)
+				}
+			})
 		}
 	})
 
