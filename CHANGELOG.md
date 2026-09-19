@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.2.0](https://github.com/nu0ma/spanner-readonly-cli/compare/v0.1.5...v0.2.0) - 2026-09-19
+
+- fix: reject duplicate columns, limit rows, and return JSON errors by @nu0ma in https://github.com/nu0ma/spanner-readonly-cli/pull/47
+
 ## [v0.1.5](https://github.com/nu0ma/spanner-readonly-cli/compare/v0.1.4...v0.1.5) - 2026-09-18
 
 - chore(deps): update remaining Go dependencies by @nu0ma in https://github.com/nu0ma/spanner-readonly-cli/pull/45
