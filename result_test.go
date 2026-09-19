@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"cloud.google.com/go/spanner"
+	"google.golang.org/grpc/codes"
 )
 
 func TestRowToMap(t *testing.T) {
@@ -47,6 +48,9 @@ func TestMarshalResult(t *testing.T) {
 	if !strings.Contains(s, `"rowCount":1`) {
 		t.Fatalf("missing rowCount: %s", s)
 	}
+	if !strings.Contains(s, `"truncated":false`) {
+		t.Fatalf("complete results must explicitly include truncated=false: %s", s)
+	}
 }
 
 func TestMarshalResultEmptyRows(t *testing.T) {
@@ -56,5 +60,26 @@ func TestMarshalResultEmptyRows(t *testing.T) {
 	}
 	if !strings.Contains(string(got), `"rows":[]`) {
 		t.Fatalf("empty rows should encode as [] not null: %s", got)
+	}
+}
+
+func TestRowToMapRejectsDuplicateColumns(t *testing.T) {
+	for _, names := range [][]string{{"id", "id"}, {"", ""}} {
+		t.Run(strings.Join(names, ","), func(t *testing.T) {
+			row, err := spanner.NewRow(names, []any{int64(1), int64(2)})
+			if err != nil {
+				t.Fatalf("NewRow error: %v", err)
+			}
+			_, _, err = rowToMap(row)
+			if err == nil {
+				t.Fatal("want error instead of silently overwriting a column")
+			}
+			if got := spanner.ErrCode(err); got != codes.InvalidArgument {
+				t.Fatalf("error code: got %s, want InvalidArgument", got)
+			}
+			if !strings.Contains(err.Error(), "use AS") {
+				t.Fatalf("error should explain how to fix the query: %v", err)
+			}
+		})
 	}
 }

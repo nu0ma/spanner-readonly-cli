@@ -65,7 +65,7 @@ export SPANNER_DATABASE=my-database
 A single JSON object on stdout — designed to be easy for agents and `jq`:
 
 ```json
-{"columns":["UserId","Name"],"rows":[{"UserId":1,"Name":"Alice"}],"rowCount":1}
+{"columns":["UserId","Name"],"rows":[{"UserId":1,"Name":"Alice"}],"rowCount":1,"truncated":false}
 ```
 
 - `INT64` stays a JSON number with full precision (no 2^53 truncation)
@@ -73,7 +73,45 @@ A single JSON object on stdout — designed to be easy for agents and `jq`:
 - `ARRAY` → array, `STRUCT` → object, `NULL` → null
 - `FLOAT64` NaN/Infinity → strings (JSON has no representation for them)
 
-Errors go to stderr as `{"error":"..."}` with a non-zero exit code.
+Duplicate result column names (including repeated unnamed columns) and
+duplicate STRUCT field names are rejected instead of silently overwriting values.
+Assign unique aliases with `AS` when selecting columns with the same name.
+
+### Result limits
+
+All data commands return at most **100 rows** by default. Override with
+`--max-rows N`, or use `--max-rows 0` to return all rows:
+
+```sh
+spanner-readonly-cli query "SELECT UserId FROM Users ORDER BY UserId" --max-rows 20
+```
+
+`rowCount` counts returned rows. `truncated` is `true` only when an additional
+row was found beyond the limit; it is `false` for complete results, including
+results with exactly the requested number of rows. Truncated results exit
+successfully, so agents should check this field before treating the output as
+complete. No continuation token is returned.
+
+The limit bounds the number of returned rows, not their byte size or the
+database's query cost. Use selective SQL and an appropriate `LIMIT` when needed.
+
+### Errors
+
+Errors go to stderr as a single JSON object:
+
+```json
+{"error":"...","code":"PermissionDenied","retryable":false}
+```
+
+The existing `error` string is preserved. `code` uses Spanner/gRPC status names;
+local argument errors use `InvalidArgument`, missing configuration uses
+`FailedPrecondition`, and unclassified local failures use `Unknown`.
+`retryable` is `true` for `Unavailable`, `Aborted`, and `DeadlineExceeded`;
+retry with backoff and a bounded retry count, adjusting the timeout if needed.
+
+Exit codes are `0` for success (including help), `2` for invalid CLI usage, and
+`1` for configuration or execution failures. `--help` and `--version` remain
+plain text on stdout.
 
 ### Query parameters
 

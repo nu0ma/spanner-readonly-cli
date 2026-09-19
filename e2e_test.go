@@ -106,6 +106,69 @@ func TestE2E(t *testing.T) {
 		}
 	})
 
+	t.Run("row limits", func(t *testing.T) {
+		cases := []struct {
+			name          string
+			req           string
+			wantCount     int
+			wantTruncated bool
+		}{
+			{
+				name:          "more rows than limit",
+				req:           "1",
+				wantCount:     1,
+				wantTruncated: true,
+			},
+			{
+				name:      "exactly the limit",
+				req:       "2",
+				wantCount: 2,
+			},
+			{
+				name:      "fewer rows than limit",
+				req:       "3",
+				wantCount: 2,
+			},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				res := mustResult(t, "query", "SELECT UserId FROM Users ORDER BY UserId", "--max-rows", tc.req)
+				if res.RowCount != tc.wantCount || len(res.Rows) != tc.wantCount || res.Truncated != tc.wantTruncated {
+					t.Fatalf("got %+v, want %d rows and truncated=%t", res, tc.wantCount, tc.wantTruncated)
+				}
+				if got := fmt.Sprint(res.Rows[0]["UserId"]); got != "1" {
+					t.Fatalf("first row: got UserId %s, want 1", got)
+				}
+			})
+		}
+	})
+
+	t.Run("default and unlimited row limits", func(t *testing.T) {
+		const sql = "SELECT n FROM UNNEST(GENERATE_ARRAY(1, 101)) AS n ORDER BY n"
+		res := mustResult(t, "query", sql)
+		if res.RowCount != 100 || len(res.Rows) != 100 || !res.Truncated {
+			t.Fatalf("got %d rows, rowCount=%d, truncated=%t; want 100 rows and truncated=true", len(res.Rows), res.RowCount, res.Truncated)
+		}
+		res = mustResult(t, "query", sql, "--max-rows", "0")
+		if res.RowCount != 101 || len(res.Rows) != 101 || res.Truncated {
+			t.Fatalf("got %d rows, rowCount=%d, truncated=%t; want 101 rows and truncated=false", len(res.Rows), res.RowCount, res.Truncated)
+		}
+	})
+
+	t.Run("duplicate columns return a JSON error", func(t *testing.T) {
+		code, stdout, stderr := run("query", "SELECT 1 AS id, 2 AS id")
+		if code != 1 || stdout != "" {
+			t.Fatalf("code=%d stdout=%q stderr=%s", code, stdout, stderr)
+		}
+		var got errorResult
+		if err := json.Unmarshal([]byte(stderr), &got); err != nil {
+			t.Fatalf("stderr must be JSON: %v", err)
+		}
+		if got.Code != "InvalidArgument" || got.Retryable || !strings.Contains(got.Error, "duplicate result column") {
+			t.Fatalf("unexpected error: %+v", got)
+		}
+	})
+
 	t.Run("DML and DDL are rejected", func(t *testing.T) {
 		for _, sql := range []string{
 			"INSERT INTO Users (UserId, Name) VALUES (99, 'evil')",
@@ -117,8 +180,12 @@ func TestE2E(t *testing.T) {
 			if code == 0 {
 				t.Fatalf("write statement must fail: %s", sql)
 			}
-			if !strings.Contains(stderr, `{"error":`) {
-				t.Fatalf("stderr should be a JSON error: %s", stderr)
+			var got errorResult
+			if err := json.Unmarshal([]byte(stderr), &got); err != nil {
+				t.Fatalf("stderr must be JSON: %v: %s", err, stderr)
+			}
+			if got.Code != "InvalidArgument" || got.Retryable {
+				t.Fatalf("unexpected Spanner error: %+v", got)
 			}
 		}
 		res := mustResult(t, "query", "SELECT COUNT(*) AS c FROM Users")
