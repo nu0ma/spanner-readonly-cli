@@ -122,6 +122,86 @@ func TestE2E(t *testing.T) {
 		}
 	})
 
+	t.Run("index definitions", func(t *testing.T) {
+		res := mustResult(t, "indexes")
+		want := Result{
+			Columns: []string{"table_schema", "table_name", "index_name", "index_type", "is_unique", "index_state", "index_columns"},
+			Rows: []map[string]any{
+				{
+					"table_schema": "",
+					"table_name":   "Users",
+					"index_name":   "PRIMARY_KEY",
+					"index_type":   "PRIMARY_KEY",
+					"is_unique":    true,
+					"index_state":  nil,
+					"index_columns": []any{
+						map[string]any{"column_name": "UserId", "ordinal_position": json.Number("1"), "column_ordering": "ASC"},
+					},
+				},
+				{
+					"table_schema": "",
+					"table_name":   "Users",
+					"index_name":   "UsersByEmail",
+					"index_type":   "INDEX",
+					"is_unique":    false,
+					"index_state":  "READ_WRITE",
+					"index_columns": []any{
+						map[string]any{"column_name": "Email", "ordinal_position": json.Number("1"), "column_ordering": "ASC"},
+					},
+				},
+				{
+					"table_schema": "sales",
+					"table_name":   "Users",
+					"index_name":   "PRIMARY_KEY",
+					"index_type":   "PRIMARY_KEY",
+					"is_unique":    true,
+					"index_state":  nil,
+					"index_columns": []any{
+						map[string]any{"column_name": "UserId", "ordinal_position": json.Number("1"), "column_ordering": "DESC"},
+					},
+				},
+				{
+					"table_schema": "sales",
+					"table_name":   "Users",
+					"index_name":   "UsersByEmail",
+					"index_type":   "INDEX",
+					"is_unique":    false,
+					"index_state":  "READ_WRITE",
+					"index_columns": []any{
+						map[string]any{"column_name": "Email", "ordinal_position": json.Number("1"), "column_ordering": "DESC"},
+						map[string]any{"column_name": "Name", "ordinal_position": json.Number("2"), "column_ordering": "ASC"},
+						map[string]any{"column_name": "Note", "ordinal_position": nil, "column_ordering": nil},
+					},
+				},
+			},
+			RowCount: 4,
+		}
+		if diff := cmp.Diff(want, res); diff != "" {
+			t.Fatalf("indexes mismatch (-want +got):\n%s", diff)
+		}
+
+		filtered := mustResult(t, "indexes", "--table", "SALES.users", "--max-rows", "2")
+		wantFiltered := Result{
+			Columns:  want.Columns,
+			Rows:     want.Rows[2:],
+			RowCount: 2,
+		}
+		if diff := cmp.Diff(wantFiltered, filtered); diff != "" {
+			t.Fatalf("filtered indexes mismatch (-want +got):\n%s", diff)
+		}
+
+		limited := mustResult(t, "indexes", "--table", "sales.Users", "--max-rows", "1")
+		wantLimited := Result{
+			Columns:   want.Columns,
+			Rows:      want.Rows[2:3],
+			RowCount:  1,
+			Truncated: true,
+		}
+		if diff := cmp.Diff(wantLimited, limited); diff != "" {
+			t.Fatalf("limited indexes mismatch (-want +got):\n%s", diff)
+		}
+	})
+
 	t.Run("missing schema does not match default schema", func(t *testing.T) {
 		for _, req := range [][]string{{"describe", "missing.Users"}, {"indexes", "--table", "missing.Users"}} {
 			t.Run(req[0], func(t *testing.T) {

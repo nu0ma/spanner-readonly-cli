@@ -30,7 +30,7 @@ Commands:
                       --param name=value   bind a STRING parameter (repeatable)
   tables            List user tables
   describe <table>  Show column definitions (table or schema.table)
-  indexes           List indexes
+  indexes           List indexes and their columns
                       --table <name>       filter by table or schema.table
 
 Connection flags (fall back to environment variables):

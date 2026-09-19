@@ -75,6 +75,24 @@ spanner-readonly-cli describe sales.Users
 spanner-readonly-cli indexes --table sales.Users
 ```
 
+`indexes` returns one row per index, including primary keys. Each row contains
+an `index_columns` array with `column_name`, `ordinal_position`, and
+`column_ordering` (`ASC` / `DESC`). For example:
+
+```json
+{
+  "index_columns": [
+    {"column_name":"Email","ordinal_position":1,"column_ordering":"DESC"},
+    {"column_name":"Name","ordinal_position":2,"column_ordering":"ASC"},
+    {"column_name":"Note","ordinal_position":null,"column_ordering":null}
+  ]
+}
+```
+
+Key columns appear in index order, followed by non-key columns such as
+`STORING` columns sorted by name. Non-key columns have `null` position and
+ordering. `--max-rows` limits indexes, not the columns within each index.
+
 ### Output
 
 A single JSON object on stdout — designed to be easy for agents and `jq`:

@@ -26,7 +26,14 @@ ORDER BY ordinal_position`,
 }
 
 func indexesStatement(table string) spanner.Statement {
-	stmt := spanner.Statement{SQL: `SELECT i.table_schema, i.table_name, i.index_name, i.index_type, i.is_unique, i.index_state
+	stmt := spanner.Statement{SQL: `SELECT i.table_schema, i.table_name, i.index_name, i.index_type, i.is_unique, i.index_state,
+  ARRAY(
+    SELECT AS STRUCT c.column_name, c.ordinal_position, c.column_ordering
+    FROM information_schema.index_columns AS c
+    WHERE c.table_catalog = i.table_catalog AND c.table_schema = i.table_schema
+      AND c.table_name = i.table_name AND c.index_name = i.index_name
+    ORDER BY c.ordinal_position IS NULL, c.ordinal_position, c.column_name
+  ) AS index_columns
 FROM information_schema.indexes AS i
 WHERE LOWER(i.table_schema) NOT IN ('information_schema', 'spanner_sys')`}
 	if table != "" {
