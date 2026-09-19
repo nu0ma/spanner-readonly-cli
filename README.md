@@ -103,7 +103,8 @@ Errors go to stderr as a single JSON object:
 {"error":"...","code":"PermissionDenied","retryable":false}
 ```
 
-The existing `error` string is preserved. `code` uses Spanner/gRPC status names;
+The `error` field remains a string, but message text may change; use `code` for
+programmatic handling. `code` uses Spanner/gRPC status names;
 local argument errors use `InvalidArgument`, missing configuration uses
 `FailedPrecondition`, and unclassified local failures use `Unknown`.
 `retryable` is `true` for `Unavailable`, `Aborted`, and `DeadlineExceeded`;
