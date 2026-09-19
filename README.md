@@ -60,6 +60,39 @@ export SPANNER_INSTANCE=my-instance
 export SPANNER_DATABASE=my-database
 ```
 
+### Schema and index metadata
+
+`tables` and unfiltered `indexes` include both the default schema and named
+user schemas. Their `table_schema` field is an empty string for the default
+schema. `table_name` remains the unqualified name.
+
+Use `schema.table` to describe or filter a table in a named schema. An
+unqualified name selects the default schema; schema and table names are
+matched case-insensitively:
+
+```sh
+spanner-readonly-cli describe sales.Users
+spanner-readonly-cli indexes --table sales.Users
+```
+
+`indexes` returns one row per index, including primary keys. Each row contains
+an `index_columns` array with `column_name`, `ordinal_position`, and
+`column_ordering` (`ASC` / `DESC`). For example:
+
+```json
+{
+  "index_columns": [
+    {"column_name":"Email","ordinal_position":1,"column_ordering":"DESC"},
+    {"column_name":"Name","ordinal_position":2,"column_ordering":"ASC"},
+    {"column_name":"Note","ordinal_position":null,"column_ordering":null}
+  ]
+}
+```
+
+Key columns appear in index order, followed by non-key columns such as
+`STORING` columns sorted by name. Non-key columns have `null` position and
+ordering. `--max-rows` limits indexes, not the columns within each index.
+
 ### Output
 
 A single JSON object on stdout — designed to be easy for agents and `jq`:
@@ -82,6 +115,7 @@ Column names are preserved when a query returns no rows:
 Duplicate result column names (including repeated unnamed columns) and
 duplicate STRUCT field names are rejected instead of silently overwriting values.
 Assign unique aliases with `AS` when selecting columns with the same name.
+Duplicate result column names are rejected even when the query returns no rows.
 
 ### Result limits
 
@@ -132,6 +166,8 @@ spanner-readonly-cli query "SELECT * FROM Users WHERE UserId = CAST(@id AS INT64
 ### Timeout
 
 Queries time out after 30s by default; override with `--timeout 2m`.
+The duration must be greater than zero. Zero and negative values are rejected
+with exit code `2`, `code: "InvalidArgument"`, and `retryable: false`.
 
 ## Development
 

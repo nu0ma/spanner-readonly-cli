@@ -3,6 +3,8 @@ package main
 import (
 	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestTablesStatement(t *testing.T) {
@@ -10,8 +12,8 @@ func TestTablesStatement(t *testing.T) {
 	if !strings.Contains(stmt.SQL, "information_schema.tables") {
 		t.Fatalf("SQL: %s", stmt.SQL)
 	}
-	if !strings.Contains(stmt.SQL, "table_schema = ''") {
-		t.Fatalf("must be restricted to user tables: %s", stmt.SQL)
+	if !strings.Contains(stmt.SQL, "NOT IN ('information_schema', 'spanner_sys')") {
+		t.Fatalf("must exclude system schemas: %s", stmt.SQL)
 	}
 }
 
@@ -39,5 +41,31 @@ func TestIndexesStatement(t *testing.T) {
 	filtered := indexesStatement("Users")
 	if !strings.Contains(filtered.SQL, "@table") || filtered.Params["table"] != "Users" {
 		t.Fatalf("table filter expected: %s %#v", filtered.SQL, filtered.Params)
+	}
+}
+
+func TestTableParams(t *testing.T) {
+	cases := []struct {
+		name string
+		req  string
+		want map[string]any
+	}{
+		{
+			name: "default schema",
+			req:  "Users",
+			want: map[string]any{"schema": "", "table": "Users"},
+		},
+		{
+			name: "named schema",
+			req:  "Sales.Users",
+			want: map[string]any{"schema": "Sales", "table": "Users"},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if diff := cmp.Diff(tc.want, tableParams(tc.req)); diff != "" {
+				t.Fatalf("table parameters mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
