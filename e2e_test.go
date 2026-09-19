@@ -65,8 +65,16 @@ func TestE2E(t *testing.T) {
 
 	t.Run("tables", func(t *testing.T) {
 		res := mustResult(t, "tables")
-		if res.RowCount != 1 || res.Rows[0]["table_name"] != "Users" {
-			t.Fatalf("got %+v", res)
+		want := Result{
+			Columns: []string{"table_schema", "table_name", "parent_table_name"},
+			Rows: []map[string]any{
+				{"table_schema": "", "table_name": "Users", "parent_table_name": nil},
+				{"table_schema": "sales", "table_name": "Users", "parent_table_name": nil},
+			},
+			RowCount: 2,
+		}
+		if diff := cmp.Diff(want, res); diff != "" {
+			t.Fatalf("tables mismatch (-want +got):\n%s", diff)
 		}
 	})
 
@@ -84,8 +92,23 @@ func TestE2E(t *testing.T) {
 		}
 	})
 
+	t.Run("describe named schema", func(t *testing.T) {
+		for _, table := range []string{"sales.Users", "SALES.users"} {
+			t.Run(table, func(t *testing.T) {
+				res := mustResult(t, "describe", table)
+				names := make([]string, 0, len(res.Rows))
+				for _, row := range res.Rows {
+					names = append(names, fmt.Sprint(row["column_name"]))
+				}
+				if diff := cmp.Diff([]string{"UserId", "Name", "Email", "Note"}, names); diff != "" {
+					t.Fatalf("column names mismatch (-want +got):\n%s", diff)
+				}
+			})
+		}
+	})
+
 	t.Run("indexes", func(t *testing.T) {
-		for _, table := range []string{"Users", "users"} {
+		for _, table := range []string{"Users", "users", "sales.Users", "SALES.users"} {
 			t.Run(table, func(t *testing.T) {
 				res := mustResult(t, "indexes", "--table", table)
 				names := make([]string, 0, len(res.Rows))
@@ -96,6 +119,31 @@ func TestE2E(t *testing.T) {
 					t.Fatalf("index names mismatch (-want +got):\n%s", diff)
 				}
 			})
+		}
+	})
+
+	t.Run("missing schema does not match default schema", func(t *testing.T) {
+		for _, req := range [][]string{{"describe", "missing.Users"}, {"indexes", "--table", "missing.Users"}} {
+			t.Run(req[0], func(t *testing.T) {
+				res := mustResult(t, req...)
+				if res.RowCount != 0 || len(res.Rows) != 0 || len(res.Columns) == 0 || res.Truncated {
+					t.Fatalf("want empty result with columns, got %+v", res)
+				}
+			})
+		}
+	})
+
+	t.Run("query named table", func(t *testing.T) {
+		res := mustResult(t, "query", "SELECT Name FROM sales.Users WHERE UserId = 1", "--timeout", "2s")
+		want := Result{
+			Columns: []string{"Name"},
+			Rows: []map[string]any{
+				{"Name": "Sales Alice"},
+			},
+			RowCount: 1,
+		}
+		if diff := cmp.Diff(want, res); diff != "" {
+			t.Fatalf("named table result mismatch (-want +got):\n%s", diff)
 		}
 	})
 
@@ -236,6 +284,14 @@ func setupOmniDatabase(t *testing.T, ctx context.Context, endpoint, databaseID s
 				Email STRING(200)
 			) PRIMARY KEY (UserId)`,
 			`CREATE INDEX UsersByEmail ON Users(Email)`,
+			`CREATE SCHEMA sales`,
+			`CREATE TABLE sales.Users (
+				UserId INT64 NOT NULL,
+				Name STRING(100),
+				Email STRING(200),
+				Note STRING(100)
+			) PRIMARY KEY (UserId DESC)`,
+			`CREATE INDEX sales.UsersByEmail ON sales.Users(Email DESC, Name ASC) STORING (Note)`,
 		},
 	})
 	if err != nil {
@@ -266,6 +322,9 @@ func setupOmniDatabase(t *testing.T, ctx context.Context, endpoint, databaseID s
 		spanner.Insert("Users",
 			[]string{"UserId", "Name"},
 			[]any{int64(9223372036854775807), "MaxInt"}),
+		spanner.Insert("sales.Users",
+			[]string{"UserId", "Name", "Email", "Note"},
+			[]any{int64(1), "Sales Alice", "sales@example.com", "stored value"}),
 	})
 	if err != nil {
 		t.Fatalf("seed data: %v", err)

@@ -29,9 +29,9 @@ Commands:
   query <sql>       Execute a SELECT statement
                       --param name=value   bind a STRING parameter (repeatable)
   tables            List user tables
-  describe <table>  Show column definitions of a table
+  describe <table>  Show column definitions (table or schema.table)
   indexes           List indexes
-                      --table <name>       filter by table
+                      --table <name>       filter by table or schema.table
 
 Connection flags (fall back to environment variables):
   --project    GCP project ID        (SPANNER_PROJECT)
@@ -81,7 +81,7 @@ func Run(args []string, stdout, stderr io.Writer, getenv func(string) string) in
 	case "query":
 		fs.Var(&paramFlags, "param", "query parameter as name=value (repeatable)")
 	case "indexes":
-		fs.StringVar(&tableFilter, "table", "", "filter indexes by table name")
+		fs.StringVar(&tableFilter, "table", "", "filter indexes by table or schema.table")
 	case "tables", "describe":
 	default:
 		return writeUsageError(stderr, fmt.Errorf("unknown command %q; use --help for usage", command))

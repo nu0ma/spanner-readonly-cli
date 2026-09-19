@@ -60,6 +60,21 @@ export SPANNER_INSTANCE=my-instance
 export SPANNER_DATABASE=my-database
 ```
 
+### Schema and index metadata
+
+`tables` and unfiltered `indexes` include both the default schema and named
+user schemas. Their `table_schema` field is an empty string for the default
+schema. `table_name` remains the unqualified name.
+
+Use `schema.table` to describe or filter a table in a named schema. An
+unqualified name selects the default schema; schema and table names are
+matched case-insensitively:
+
+```sh
+spanner-readonly-cli describe sales.Users
+spanner-readonly-cli indexes --table sales.Users
+```
+
 ### Output
 
 A single JSON object on stdout — designed to be easy for agents and `jq`:
