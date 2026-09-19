@@ -115,6 +115,7 @@ Column names are preserved when a query returns no rows:
 Duplicate result column names (including repeated unnamed columns) and
 duplicate STRUCT field names are rejected instead of silently overwriting values.
 Assign unique aliases with `AS` when selecting columns with the same name.
+Duplicate result column names are rejected even when the query returns no rows.
 
 ### Result limits
 

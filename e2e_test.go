@@ -311,16 +311,37 @@ func TestE2E(t *testing.T) {
 	})
 
 	t.Run("duplicate columns return a JSON error", func(t *testing.T) {
-		code, stdout, stderr := run("query", "SELECT 1 AS id, 2 AS id")
-		if code != 1 || stdout != "" {
-			t.Fatalf("code=%d stdout=%q stderr=%s", code, stdout, stderr)
+		cases := []struct {
+			name string
+			req  string
+		}{
+			{
+				name: "with rows",
+				req:  "SELECT 1 AS id, 2 AS id",
+			},
+			{
+				name: "without rows",
+				req:  "SELECT UserId AS id, Name AS id FROM Users WHERE UserId = -1",
+			},
+			{
+				name: "unnamed columns without rows",
+				req:  "SELECT 1, 2 FROM Users WHERE UserId = -1",
+			},
 		}
-		var got errorResult
-		if err := json.Unmarshal([]byte(stderr), &got); err != nil {
-			t.Fatalf("stderr must be JSON: %v", err)
-		}
-		if got.Code != "InvalidArgument" || got.Retryable || !strings.Contains(got.Error, "duplicate result column") {
-			t.Fatalf("unexpected error: %+v", got)
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				code, stdout, stderr := run("query", tc.req)
+				if code != 1 || stdout != "" {
+					t.Fatalf("code=%d stdout=%q stderr=%s", code, stdout, stderr)
+				}
+				var got errorResult
+				if err := json.Unmarshal([]byte(stderr), &got); err != nil {
+					t.Fatalf("stderr must be JSON: %v", err)
+				}
+				if got.Code != "InvalidArgument" || got.Retryable || !strings.Contains(got.Error, "duplicate result column") {
+					t.Fatalf("unexpected error: %+v", got)
+				}
+			})
 		}
 	})
 

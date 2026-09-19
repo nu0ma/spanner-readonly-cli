@@ -215,6 +215,9 @@ func executeReadOnly(ctx context.Context, cfg Config, stmt spanner.Statement, ma
 		for i, field := range fields {
 			result.Columns[i] = field.GetName()
 		}
+		if err := validateColumnNames(result.Columns); err != nil {
+			return Result{}, err
+		}
 	}
 	result.RowCount = len(result.Rows)
 	return result, nil

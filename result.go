@@ -18,11 +18,11 @@ type Result struct {
 
 func rowToMap(row *spanner.Row) ([]string, map[string]any, error) {
 	columns := row.ColumnNames()
+	if err := validateColumnNames(columns); err != nil {
+		return nil, nil, err
+	}
 	m := make(map[string]any, len(columns))
 	for i, name := range columns {
-		if _, exists := m[name]; exists {
-			return nil, nil, status.Errorf(codes.InvalidArgument, "duplicate result column %q; use AS to assign unique column names", name)
-		}
 		var gcv spanner.GenericColumnValue
 		if err := row.Column(i, &gcv); err != nil {
 			return nil, nil, err
@@ -34,6 +34,17 @@ func rowToMap(row *spanner.Row) ([]string, map[string]any, error) {
 		m[name] = decoded
 	}
 	return columns, m, nil
+}
+
+func validateColumnNames(columns []string) error {
+	seen := make(map[string]struct{}, len(columns))
+	for _, name := range columns {
+		if _, exists := seen[name]; exists {
+			return status.Errorf(codes.InvalidArgument, "duplicate result column %q; use AS to assign unique column names", name)
+		}
+		seen[name] = struct{}{}
+	}
+	return nil
 }
 
 // marshalResult encodes without HTML escaping so SQL-ish strings (<, >, &)
