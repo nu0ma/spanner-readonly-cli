@@ -16,7 +16,7 @@ func describeStatement(table string) spanner.Statement {
 	return spanner.Statement{
 		SQL: `SELECT column_name, spanner_type, is_nullable, ordinal_position
 FROM information_schema.columns
-WHERE table_schema = '' AND table_name = @table
+WHERE table_schema = '' AND LOWER(table_name) = LOWER(@table)
 ORDER BY ordinal_position`,
 		Params: map[string]any{"table": table},
 	}
@@ -27,7 +27,7 @@ func indexesStatement(table string) spanner.Statement {
 FROM information_schema.indexes
 WHERE table_schema = ''`}
 	if table != "" {
-		stmt.SQL += ` AND table_name = @table`
+		stmt.SQL += ` AND LOWER(table_name) = LOWER(@table)`
 		stmt.Params = map[string]any{"table": table}
 	}
 	stmt.SQL += `
