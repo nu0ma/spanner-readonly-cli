@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.2.1](https://github.com/nu0ma/spanner-readonly-cli/compare/v0.2.0...v0.2.1) - 2026-09-19
+
+- docs: add MIT license by @nu0ma in https://github.com/nu0ma/spanner-readonly-cli/pull/49
+
+The module archive now includes the MIT license so pkg.go.dev can display its documentation. CLI behavior is unchanged from v0.2.0.
+
 ## [v0.2.0](https://github.com/nu0ma/spanner-readonly-cli/compare/v0.1.5...v0.2.0) - 2026-09-19
 
 - fix: reject duplicate columns, limit rows, and return JSON errors by @nu0ma in https://github.com/nu0ma/spanner-readonly-cli/pull/47
