@@ -160,3 +160,7 @@ Releases are managed by [tagpr](https://github.com/Songmu/tagpr):
 2. Merge the release PR — tagpr tags `vX.Y.Z` and creates a GitHub Release
 3. Label the release PR with `minor` / `major` to control the bump
    (default is patch)
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
