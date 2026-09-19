@@ -5,7 +5,9 @@ import (
 	"reflect"
 	"testing"
 
+	"cloud.google.com/go/spanner"
 	sppb "cloud.google.com/go/spanner/apiv1/spannerpb"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -81,5 +83,49 @@ func TestDecodeValueStruct(t *testing.T) {
 	want := map[string]any{"id": json.Number("7"), "name": "foo"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %#v, want %#v", got, want)
+	}
+}
+
+func TestDecodeValueRejectsDuplicateStructFields(t *testing.T) {
+	cases := []struct {
+		name string
+		req  []string
+	}{
+		{
+			name: "duplicate names",
+			req:  []string{"id", "id"},
+		},
+		{
+			name: "generated name collision",
+			req:  []string{"_field_1", ""},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			typ := &sppb.Type{
+				Code: sppb.TypeCode_STRUCT,
+				StructType: &sppb.StructType{Fields: []*sppb.StructType_Field{
+					{
+						Name: tc.req[0],
+						Type: scalarType(sppb.TypeCode_INT64),
+					},
+					{
+						Name: tc.req[1],
+						Type: scalarType(sppb.TypeCode_INT64),
+					},
+				}},
+			}
+			val := structpb.NewListValue(&structpb.ListValue{Values: []*structpb.Value{
+				structpb.NewStringValue("1"),
+				structpb.NewStringValue("2"),
+			}})
+			_, err := decodeValue(typ, val)
+			if err == nil {
+				t.Fatal("want error instead of silently overwriting a STRUCT field")
+			}
+			if got := spanner.ErrCode(err); got != codes.InvalidArgument {
+				t.Fatalf("error code: got %s, want InvalidArgument", got)
+			}
+		})
 	}
 }

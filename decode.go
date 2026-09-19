@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	sppb "cloud.google.com/go/spanner/apiv1/spannerpb"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -54,6 +56,9 @@ func decodeValue(t *sppb.Type, v *structpb.Value) (any, error) {
 			name := field.GetName()
 			if name == "" {
 				name = fmt.Sprintf("_field_%d", i)
+			}
+			if _, exists := out[name]; exists {
+				return nil, status.Errorf(codes.InvalidArgument, "duplicate STRUCT field %q; use unique field names", name)
 			}
 			out[name] = decoded
 		}

@@ -4,6 +4,7 @@ go 1.27.1
 
 require (
 	cloud.google.com/go/spanner v1.95.1
+	github.com/google/go-cmp v0.7.0
 	google.golang.org/api v0.298.0
 	google.golang.org/grpc v1.84.0
 	google.golang.org/protobuf v1.36.12

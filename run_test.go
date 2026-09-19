@@ -2,8 +2,17 @@ package main
 
 import (
 	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"strings"
 	"testing"
+
+	"cloud.google.com/go/spanner"
+	"github.com/google/go-cmp/cmp"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func runCLI(t *testing.T, args []string, env map[string]string) (int, string, string) {
@@ -13,29 +22,66 @@ func runCLI(t *testing.T, args []string, env map[string]string) (int, string, st
 	return code, stdout.String(), stderr.String()
 }
 
-func TestRunNoArgsShowsUsage(t *testing.T) {
-	code, _, stderr := runCLI(t, nil, nil)
-	if code != 2 {
-		t.Fatalf("exit code: got %d, want 2", code)
+func TestRunUsageErrors(t *testing.T) {
+	cases := []struct {
+		name string
+		req  []string
+		want string
+	}{
+		{
+			name: "missing command",
+			want: "a command is required",
+		},
+		{
+			name: "unknown command",
+			req:  []string{"drop"},
+			want: "unknown command",
+		},
+		{
+			name: "unknown flag",
+			req:  []string{"query", "SELECT 1", "--unknown"},
+			want: "flag provided but not defined",
+		},
+		{
+			name: "invalid flag value",
+			req:  []string{"query", "SELECT 1", "--max-rows", "abc"},
+			want: "invalid value",
+		},
+		{
+			name: "negative row limit",
+			req:  []string{"query", "SELECT 1", "--max-rows", "-1"},
+			want: "--max-rows must be zero or greater",
+		},
+		{
+			name: "missing SQL",
+			req:  []string{"query"},
+			want: "exactly one SQL argument",
+		},
+		{
+			name: "missing table",
+			req:  []string{"describe"},
+			want: "exactly one table argument",
+		},
+		{
+			name: "unexpected positional argument",
+			req:  []string{"tables", "Users"},
+			want: "does not accept positional arguments",
+		},
 	}
-	if !strings.Contains(stderr, "Usage") {
-		t.Fatalf("stderr should show usage: %s", stderr)
-	}
-}
-
-func TestRunUnknownCommand(t *testing.T) {
-	code, _, stderr := runCLI(t, []string{"drop"}, nil)
-	if code != 2 || !strings.Contains(stderr, "unknown command") {
-		t.Fatalf("code=%d stderr=%s", code, stderr)
-	}
-}
-
-func TestRunQueryRequiresSQL(t *testing.T) {
-	code, _, stderr := runCLI(t, []string{"query"}, map[string]string{
-		"SPANNER_PROJECT": "p", "SPANNER_INSTANCE": "i", "SPANNER_DATABASE": "d",
-	})
-	if code == 0 || !strings.Contains(stderr, "SQL") {
-		t.Fatalf("code=%d stderr=%s", code, stderr)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			code, stdout, stderr := runCLI(t, tc.req, nil)
+			if code != 2 || stdout != "" {
+				t.Fatalf("code=%d stdout=%q stderr=%s", code, stdout, stderr)
+			}
+			var got errorResult
+			if err := json.Unmarshal([]byte(stderr), &got); err != nil {
+				t.Fatalf("stderr must be a single JSON error: %v: %s", err, stderr)
+			}
+			if got.Code != "InvalidArgument" || got.Retryable || !strings.Contains(got.Error, tc.want) {
+				t.Fatalf("unexpected error: %+v", got)
+			}
+		})
 	}
 }
 
@@ -44,17 +90,12 @@ func TestRunMissingConfigIsJSONError(t *testing.T) {
 	if code == 0 {
 		t.Fatal("want non-zero exit code")
 	}
-	if !strings.Contains(stderr, `{"error":`) || !strings.Contains(stderr, "SPANNER_PROJECT") {
-		t.Fatalf("stderr should be JSON error mentioning missing config: %s", stderr)
+	var got errorResult
+	if err := json.Unmarshal([]byte(stderr), &got); err != nil {
+		t.Fatalf("stderr must be JSON: %v", err)
 	}
-}
-
-func TestRunDescribeRequiresTable(t *testing.T) {
-	code, _, stderr := runCLI(t, []string{"describe"}, map[string]string{
-		"SPANNER_PROJECT": "p", "SPANNER_INSTANCE": "i", "SPANNER_DATABASE": "d",
-	})
-	if code == 0 || !strings.Contains(stderr, "table") {
-		t.Fatalf("code=%d stderr=%s", code, stderr)
+	if got.Code != "FailedPrecondition" || got.Retryable || !strings.Contains(got.Error, "SPANNER_PROJECT") {
+		t.Fatalf("unexpected error: %+v", got)
 	}
 }
 
@@ -67,6 +108,13 @@ func TestRunHelp(t *testing.T) {
 		if !strings.Contains(stdout, cmd) {
 			t.Fatalf("usage should mention %q: %s", cmd, stdout)
 		}
+	}
+}
+
+func TestRunSubcommandHelp(t *testing.T) {
+	code, stdout, stderr := runCLI(t, []string{"query", "--help"}, nil)
+	if code != 0 || stderr != "" || !strings.Contains(stdout, "max-rows") {
+		t.Fatalf("code=%d stdout=%q stderr=%q", code, stdout, stderr)
 	}
 }
 
@@ -95,5 +143,68 @@ func TestRunVersion(t *testing.T) {
 		if !strings.Contains(stdout, version) {
 			t.Fatalf("%s: stdout should contain version %q: %s", arg, version, stdout)
 		}
+	}
+}
+
+func TestWriteError(t *testing.T) {
+	cases := []struct {
+		name string
+		req  error
+		want errorResult
+	}{
+		{
+			name: "permission denied",
+			req:  spanner.ToSpannerError(status.Error(codes.PermissionDenied, "access denied")),
+			want: errorResult{
+				Code: "PermissionDenied",
+			},
+		},
+		{
+			name: "wrapped transient Spanner error",
+			req:  fmt.Errorf("query failed: %w", spanner.ToSpannerError(status.Error(codes.Unavailable, "service unavailable"))),
+			want: errorResult{
+				Code:      "Unavailable",
+				Retryable: true,
+			},
+		},
+		{
+			name: "deadline exceeded",
+			req:  fmt.Errorf("query failed: %w", context.DeadlineExceeded),
+			want: errorResult{
+				Code:      "DeadlineExceeded",
+				Retryable: true,
+			},
+		},
+		{
+			name: "canceled",
+			req:  context.Canceled,
+			want: errorResult{
+				Code: "Canceled",
+			},
+		},
+		{
+			name: "unknown local error",
+			req:  errors.New("output failed"),
+			want: errorResult{
+				Code: "Unknown",
+			},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var stderr bytes.Buffer
+			if code := writeError(&stderr, tc.req); code != 1 {
+				t.Fatalf("exit code: got %d, want 1", code)
+			}
+			var got errorResult
+			if err := json.Unmarshal(stderr.Bytes(), &got); err != nil {
+				t.Fatalf("stderr must be JSON: %v", err)
+			}
+			want := tc.want
+			want.Error = tc.req.Error()
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Fatalf("error mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

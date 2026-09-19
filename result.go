@@ -5,18 +5,24 @@ import (
 	"encoding/json"
 
 	"cloud.google.com/go/spanner"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type Result struct {
-	Columns  []string         `json:"columns"`
-	Rows     []map[string]any `json:"rows"`
-	RowCount int              `json:"rowCount"`
+	Columns   []string         `json:"columns"`
+	Rows      []map[string]any `json:"rows"`
+	RowCount  int              `json:"rowCount"`
+	Truncated bool             `json:"truncated"`
 }
 
 func rowToMap(row *spanner.Row) ([]string, map[string]any, error) {
 	columns := row.ColumnNames()
 	m := make(map[string]any, len(columns))
 	for i, name := range columns {
+		if _, exists := m[name]; exists {
+			return nil, nil, status.Errorf(codes.InvalidArgument, "duplicate result column %q; use AS to assign unique column names", name)
+		}
 		var gcv spanner.GenericColumnValue
 		if err := row.Column(i, &gcv); err != nil {
 			return nil, nil, err
