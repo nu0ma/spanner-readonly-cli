@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.3.0](https://github.com/nu0ma/spanner-readonly-cli/compare/v0.2.3...v0.3.0) - 2026-09-19
+
+- feat: expand metadata and tighten query validation by @nu0ma in https://github.com/nu0ma/spanner-readonly-cli/pull/55
+
 ## [v0.2.3](https://github.com/nu0ma/spanner-readonly-cli/compare/v0.2.2...v0.2.3) - 2026-09-19
 
 - fix: align metadata name matching and release instructions by @nu0ma in https://github.com/nu0ma/spanner-readonly-cli/pull/53
