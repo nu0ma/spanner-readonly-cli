@@ -1,5 +1,15 @@
 # Changelog
 
+## [v0.2.0](https://github.com/nu0ma/spanner-readonly-cli/compare/v0.1.5...v0.2.0) - 2026-09-19
+
+- fix: reject duplicate columns, limit rows, and return JSON errors by @nu0ma in https://github.com/nu0ma/spanner-readonly-cli/pull/47
+
+Compatibility notes:
+
+- All data commands now return at most 100 rows by default. Check `truncated` for incomplete results, or use `--max-rows 0` for unlimited output.
+- Duplicate result column names and STRUCT field collisions now return `InvalidArgument` instead of silently overwriting values.
+- Errors include `code` and `retryable`. The `error` field remains a string, but message text may change. Usage errors exit with code 2; configuration and execution failures exit with code 1.
+
 ## [v0.1.5](https://github.com/nu0ma/spanner-readonly-cli/compare/v0.1.4...v0.1.5) - 2026-09-18
 
 - chore(deps): update remaining Go dependencies by @nu0ma in https://github.com/nu0ma/spanner-readonly-cli/pull/45
