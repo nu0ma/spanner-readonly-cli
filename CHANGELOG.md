@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.2.3](https://github.com/nu0ma/spanner-readonly-cli/compare/v0.2.2...v0.2.3) - 2026-09-19
+
+- fix: align metadata name matching and release instructions by @nu0ma in https://github.com/nu0ma/spanner-readonly-cli/pull/53
+
 ## [v0.2.2](https://github.com/nu0ma/spanner-readonly-cli/compare/v0.2.1...v0.2.2) - 2026-09-19
 
 - fix: preserve column names for empty query results by @nu0ma in https://github.com/nu0ma/spanner-readonly-cli/pull/51
