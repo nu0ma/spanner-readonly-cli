@@ -147,6 +147,8 @@ spanner-readonly-cli query "SELECT * FROM Users WHERE UserId = CAST(@id AS INT64
 ### Timeout
 
 Queries time out after 30s by default; override with `--timeout 2m`.
+The duration must be greater than zero. Zero and negative values are rejected
+with exit code `2`, `code: "InvalidArgument"`, and `retryable: false`.
 
 ## Development
 

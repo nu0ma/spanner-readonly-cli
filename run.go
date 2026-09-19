@@ -40,7 +40,7 @@ Connection flags (fall back to environment variables):
   --endpoint   Spanner Omni endpoint (SPANNER_ENDPOINT), e.g. localhost:15000
                connects without authentication over plaintext gRPC;
                project and instance are both "default" on Omni
-  --timeout    query timeout, e.g. 30s, 2m (default 30s)
+  --timeout    positive query timeout, e.g. 30s, 2m (default 30s)
   --max-rows   maximum returned rows (default 100; 0 means unlimited)
 
 SPANNER_EMULATOR_HOST is honored for local development.
@@ -73,7 +73,7 @@ func Run(args []string, stdout, stderr io.Writer, getenv func(string) string) in
 	instance := fs.String("instance", "", "Spanner instance ID (SPANNER_INSTANCE)")
 	database := fs.String("database", "", "Spanner database ID (SPANNER_DATABASE)")
 	endpoint := fs.String("endpoint", "", "Spanner Omni endpoint, e.g. localhost:15000 (SPANNER_ENDPOINT)")
-	timeout := fs.Duration("timeout", defaultTimeout, "query timeout")
+	timeout := fs.Duration("timeout", defaultTimeout, "query timeout (must be greater than zero)")
 	maxRows := fs.Int("max-rows", defaultMaxRows, "maximum returned rows (0 means unlimited)")
 	var paramFlags stringSlice
 	var tableFilter string
@@ -98,6 +98,9 @@ func Run(args []string, stdout, stderr io.Writer, getenv func(string) string) in
 	}
 	if *maxRows < 0 {
 		return writeUsageError(stderr, fmt.Errorf("--max-rows must be zero or greater"))
+	}
+	if *timeout <= 0 {
+		return writeUsageError(stderr, fmt.Errorf("--timeout must be greater than zero"))
 	}
 
 	var stmt spanner.Statement

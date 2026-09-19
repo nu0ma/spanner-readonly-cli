@@ -147,6 +147,24 @@ func TestE2E(t *testing.T) {
 		}
 	})
 
+	t.Run("invalid timeouts are not retryable", func(t *testing.T) {
+		for _, timeout := range []string{"0s", "-1s"} {
+			t.Run(timeout, func(t *testing.T) {
+				code, stdout, stderr := run("query", "SELECT 1 AS id", "--timeout", timeout)
+				if code != 2 || stdout != "" {
+					t.Fatalf("code=%d stdout=%q stderr=%s", code, stdout, stderr)
+				}
+				var got errorResult
+				if err := json.Unmarshal([]byte(stderr), &got); err != nil {
+					t.Fatalf("stderr must be JSON: %v", err)
+				}
+				if got.Code != "InvalidArgument" || got.Retryable || !strings.Contains(got.Error, "--timeout") {
+					t.Fatalf("unexpected error: %+v", got)
+				}
+			})
+		}
+	})
+
 	t.Run("query with trailing param flag", func(t *testing.T) {
 		res := mustResult(t, "query",
 			"SELECT Name, UserId FROM Users WHERE Email = @email",
