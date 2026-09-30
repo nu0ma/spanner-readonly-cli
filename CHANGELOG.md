@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.3.1](https://github.com/nu0ma/spanner-readonly-cli/compare/v0.3.0...v0.3.1) - 2026-09-30
+
+- feat: cap query timeout at 10 minutes by @nu0ma in https://github.com/nu0ma/spanner-readonly-cli/pull/58
+
 ## [v0.3.0](https://github.com/nu0ma/spanner-readonly-cli/compare/v0.2.3...v0.3.0) - 2026-09-19
 
 - feat: expand metadata and tighten query validation by @nu0ma in https://github.com/nu0ma/spanner-readonly-cli/pull/55
