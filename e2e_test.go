@@ -228,7 +228,7 @@ func TestE2E(t *testing.T) {
 	})
 
 	t.Run("invalid timeouts are not retryable", func(t *testing.T) {
-		for _, timeout := range []string{"0s", "-1s"} {
+		for _, timeout := range []string{"0s", "-1s", "10m1s"} {
 			t.Run(timeout, func(t *testing.T) {
 				code, stdout, stderr := run("query", "SELECT 1 AS id", "--timeout", timeout)
 				if code != 2 || stdout != "" {
@@ -242,6 +242,29 @@ func TestE2E(t *testing.T) {
 					t.Fatalf("unexpected error: %+v", got)
 				}
 			})
+		}
+	})
+
+	t.Run("long-running query times out", func(t *testing.T) {
+		// 8 billion rows keeps Omni busy for minutes, far beyond the timeout.
+		const sql = "SELECT COUNT(*) AS n FROM UNNEST(GENERATE_ARRAY(1, 2000)) AS a " +
+			"CROSS JOIN UNNEST(GENERATE_ARRAY(1, 2000)) AS b " +
+			"CROSS JOIN UNNEST(GENERATE_ARRAY(1, 2000)) AS c"
+		start := time.Now()
+		code, stdout, stderr := run("query", sql, "--timeout", "500ms")
+		elapsed := time.Since(start)
+		if code != 1 || stdout != "" {
+			t.Fatalf("code=%d stdout=%q stderr=%s", code, stdout, stderr)
+		}
+		if elapsed > 5*time.Second {
+			t.Fatalf("query was not cancelled at the deadline: elapsed=%s", elapsed)
+		}
+		var got errorResult
+		if err := json.Unmarshal([]byte(stderr), &got); err != nil {
+			t.Fatalf("stderr must be JSON: %v", err)
+		}
+		if got.Code != "DeadlineExceeded" || !got.Retryable {
+			t.Fatalf("unexpected error: %+v", got)
 		}
 	})
 

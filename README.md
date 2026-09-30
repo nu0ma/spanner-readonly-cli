@@ -166,8 +166,9 @@ spanner-readonly-cli query "SELECT * FROM Users WHERE UserId = CAST(@id AS INT64
 ### Timeout
 
 Queries time out after 30s by default; override with `--timeout 2m`.
-The duration must be greater than zero. Zero and negative values are rejected
-with exit code `2`, `code: "InvalidArgument"`, and `retryable: false`.
+The duration must be greater than zero and at most `10m`. Zero, negative, and
+larger values are rejected with exit code `2`, `code: "InvalidArgument"`, and
+`retryable: false`.
 
 ## Development
 
@@ -190,7 +191,8 @@ SPANNER_ENDPOINT=localhost:15000 go test ./...
 
 The E2E test covers all four commands plus the read-only guarantee:
 INSERT / UPDATE / DELETE / CREATE TABLE are all rejected by the server and
-the data is verified unchanged. CI runs both (unit + E2E) on every push
+the data is verified unchanged. It also checks that a long-running query is
+cancelled at `--timeout` with `DeadlineExceeded`. CI runs both (unit + E2E) on every push
 and pull request.
 
 ## Release flow
