@@ -63,6 +63,11 @@ func TestRunUsageErrors(t *testing.T) {
 			want: "--timeout must be greater than zero",
 		},
 		{
+			name: "timeout above limit",
+			req:  []string{"query", "SELECT 1", "--timeout", "10m1s"},
+			want: "--timeout must be 10m0s or less",
+		},
+		{
 			name: "missing SQL",
 			req:  []string{"query"},
 			want: "exactly one SQL argument",
