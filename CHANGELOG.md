@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.3.2](https://github.com/nu0ma/spanner-readonly-cli/compare/v0.3.1...v0.3.2) - 2026-10-18
+
+- fix: bump Go to 1.27.2 and x/net to v0.60.0, add gosec to CI by @nu0ma in https://github.com/nu0ma/spanner-readonly-cli/pull/64
+- chore(deps): bump Songmu/tagpr from 1.20.3 to 1.21.2 by @dependabot[bot] in https://github.com/nu0ma/spanner-readonly-cli/pull/62
+- chore(deps): bump google.golang.org/api from 0.298.0 to 0.301.0 by @dependabot[bot] in https://github.com/nu0ma/spanner-readonly-cli/pull/61
+- chore(deps): bump cloud.google.com/go/spanner from 1.95.1 to 1.96.1 by @dependabot[bot] in https://github.com/nu0ma/spanner-readonly-cli/pull/63
+
 ## [v0.3.1](https://github.com/nu0ma/spanner-readonly-cli/compare/v0.3.0...v0.3.1) - 2026-09-30
 
 - feat: cap query timeout at 10 minutes by @nu0ma in https://github.com/nu0ma/spanner-readonly-cli/pull/58
