@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.3.3](https://github.com/nu0ma/spanner-readonly-cli/compare/v0.3.2...v0.3.3) - 2026-10-18
+
+- ci: start Spanner Omni early and cache the gosec binary by @nu0ma in https://github.com/nu0ma/spanner-readonly-cli/pull/66
+
 ## [v0.3.2](https://github.com/nu0ma/spanner-readonly-cli/compare/v0.3.1...v0.3.2) - 2026-10-18
 
 - fix: bump Go to 1.27.2 and x/net to v0.60.0, add gosec to CI by @nu0ma in https://github.com/nu0ma/spanner-readonly-cli/pull/64
