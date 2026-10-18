@@ -54,15 +54,25 @@ jobs:
 
   gosec:
     runs-on: ubuntu-latest
+    env:
+      # v2.29.0 cannot load Go 1.27.2 export data (securego/gosec#1771), so pin a master commit until the next release
+      GOSEC_VERSION: 707f2271f66579a18e1da25794b1e8012247274b
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        id: setup-go
         with:
           go-version-file: go.mod
-      # v2.29.0 cannot load Go 1.27.2 export data (securego/gosec#1771), so pin a master commit until the next release
-      - run: go run github.com/securego/gosec/v2/cmd/gosec@707f2271f66579a18e1da25794b1e8012247274b ./...
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: gosec-cache
+        with:
+          path: ~/go/bin/gosec
+          key: gosec-${{ runner.os }}-go${{ steps.setup-go.outputs.go-version }}-${{ env.GOSEC_VERSION }}
+      - if: steps.gosec-cache.outputs.cache-hit != 'true'
+        run: go install "github.com/securego/gosec/v2/cmd/gosec@${GOSEC_VERSION}"
+      - run: gosec ./...
 
   readonly-guarantee:
     runs-on: ubuntu-latest
@@ -72,14 +82,16 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Start Spanner Omni
+        run: |
+          nohup docker run -d --name spanner-omni -p 15000-15026:15000-15026 \
+            "$OMNI_IMAGE" start-single-server > "$RUNNER_TEMP/omni-start.log" 2>&1 &
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
       - run: go build -o spanner-readonly-cli .
-      - name: Start Spanner Omni
+      - name: Wait for Spanner Omni
         run: |
-          docker run -d --name spanner-omni -p 15000-15026:15000-15026 \
-            "$OMNI_IMAGE" start-single-server
           for _ in $(seq 1 60); do
             if docker logs spanner-omni 2>&1 | grep -q "Spanner is ready"; then
               echo "Spanner Omni is ready"
@@ -88,6 +100,7 @@ jobs:
             sleep 2
           done
           echo "Spanner Omni did not become ready" >&2
+          cat "$RUNNER_TEMP/omni-start.log" >&2
           docker logs spanner-omni >&2
           exit 1
       - name: Verify UPDATE/DELETE cannot be executed
@@ -101,14 +114,16 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Start Spanner Omni
+        run: |
+          nohup docker run -d --name spanner-omni -p 15000-15026:15000-15026 \
+            "$OMNI_IMAGE" start-single-server > "$RUNNER_TEMP/omni-start.log" 2>&1 &
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
       - run: go vet ./...
-      - name: Start Spanner Omni
+      - name: Wait for Spanner Omni
         run: |
-          docker run -d --name spanner-omni -p 15000-15026:15000-15026 \
-            "$OMNI_IMAGE" start-single-server
           for _ in $(seq 1 60); do
             if docker logs spanner-omni 2>&1 | grep -q "Spanner is ready"; then
               echo "Spanner Omni is ready"
@@ -117,6 +132,7 @@ jobs:
             sleep 2
           done
           echo "Spanner Omni did not become ready" >&2
+          cat "$RUNNER_TEMP/omni-start.log" >&2
           docker logs spanner-omni >&2
           exit 1
       - name: Run tests (unit + E2E)
