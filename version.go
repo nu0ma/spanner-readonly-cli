@@ -1,4 +1,4 @@
 package main
 
 // version is bumped automatically by tagpr on each release.
-const version = "0.3.1"
+const version = "0.3.2"
