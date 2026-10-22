@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.3.4](https://github.com/nu0ma/spanner-readonly-cli/compare/v0.3.3...v0.3.4) - 2026-10-22
+
+- chore(deps): bump google.golang.org/api from 0.301.0 to 0.302.0 by @dependabot[bot] in https://github.com/nu0ma/spanner-readonly-cli/pull/68
+- fix: bump Go to 1.27.3 by @nu0ma in https://github.com/nu0ma/spanner-readonly-cli/pull/69
+
 ## [v0.3.3](https://github.com/nu0ma/spanner-readonly-cli/compare/v0.3.2...v0.3.3) - 2026-10-18
 
 - ci: start Spanner Omni early and cache the gosec binary by @nu0ma in https://github.com/nu0ma/spanner-readonly-cli/pull/66
