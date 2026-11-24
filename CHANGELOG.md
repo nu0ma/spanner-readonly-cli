@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.3.6](https://github.com/nu0ma/spanner-readonly-cli/compare/v0.3.5...v0.3.6) - 2026-11-24
+
+- chore(deps): bump google.golang.org/api from 0.302.0 to 0.315.0 by @dependabot[bot] in https://github.com/nu0ma/spanner-readonly-cli/pull/80
+- chore(deps): bump actions/setup-go from 7.0.0 to 7.1.0 by @dependabot[bot] in https://github.com/nu0ma/spanner-readonly-cli/pull/84
+- chore(deps): bump zizmorcore/zizmor-action from 0.6.4 to 0.8.1 by @dependabot[bot] in https://github.com/nu0ma/spanner-readonly-cli/pull/79
+- chore(deps): bump Songmu/tagpr from 1.21.2 to 1.22.0 by @dependabot[bot] in https://github.com/nu0ma/spanner-readonly-cli/pull/78
+
 ## [v0.3.5](https://github.com/nu0ma/spanner-readonly-cli/compare/v0.3.4...v0.3.5) - 2026-11-24
 
 - fix: bump Go to 1.27.4 and vulnerable dependencies by @nu0ma in https://github.com/nu0ma/spanner-readonly-cli/pull/85
